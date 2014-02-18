@@ -21,8 +21,9 @@ define( [
 	"../navigation/history",
 	"../navigation/navigator",
 	"../navigation/method",
+	"../jquery.mobile.animationComplete",
 	"../jquery.mobile.navigation",
-	"jquery.hashchange" ], function( jQuery ) {
+	"jquery-plugins/jquery.hashchange" ], function( jQuery ) {
 //>>excludeEnd("jqmBuildExclude");
 (function( $, undefined ) {
 
@@ -40,14 +41,12 @@ function fitSegmentInsideSegment( windowSize, segmentSize, offset, desired ) {
 	return returnValue;
 }
 
-function getWindowCoordinates() {
-	var theWindow = $.mobile.window;
-
+function getWindowCoordinates( theWindow ) {
 	return {
 		x: theWindow.scrollLeft(),
 		y: theWindow.scrollTop(),
-		cx: ( window.innerWidth || theWindow.width() ),
-		cy: ( window.innerHeight || theWindow.height() )
+		cx: ( theWindow[ 0 ].innerWidth || theWindow.width() ),
+		cy: ( theWindow[ 0 ].innerHeight || theWindow.height() )
 	};
 }
 
@@ -113,20 +112,20 @@ $.widget( "mobile.popup", {
 			};
 		} else {
 			this._ui = this._enhance( theElement, myId );
-			this
-				._applyTransition( currentOptions.transition )
-				._setTolerance( currentOptions.tolerance );
+			this._applyTransition( currentOptions.transition );
 		}
-		this._ui.focusElement = this._ui.container;
+		this
+			._setTolerance( currentOptions.tolerance )
+			._ui.focusElement = this._ui.container;
 
 		// Event handlers
 		this._on( this._ui.screen, { "vclick": "_eatEventAndClose" } );
-		this._on( $.mobile.window, {
+		this._on( this.window, {
 			orientationchange: $.proxy( this, "_handleWindowOrientationchange" ),
 			resize: $.proxy( this, "_handleWindowResize" ),
 			keyup: $.proxy( this, "_handleWindowKeyUp" )
 		});
-		this._on( $.mobile.document, { "focusin": "_handleDocumentFocusIn" } );
+		this._on( this.document, { "focusin": "_handleDocumentFocusIn" } );
 	},
 
 	_enhance: function( theElement, myId ) {
@@ -176,13 +175,21 @@ $.widget( "mobile.popup", {
 		return false;
 	},
 
-	// Make sure the screen size is increased beyond the page height if the popup's causes the document to increase in height
+	// Make sure the screen covers the entire document - CSS is sometimes not
+	// enough to accomplish this.
 	_resizeScreen: function() {
-		var popupHeight = this._ui.container.outerHeight( true );
+		var screen = this._ui.screen,
+			popupHeight = this._ui.container.outerHeight( true ),
+			screenHeight = screen.removeAttr( "style" ).height(),
 
-		this._ui.screen.removeAttr( "style" );
-		if ( popupHeight > this._ui.screen.height() ) {
-			this._ui.screen.height( popupHeight );
+			// Subtracting 1 here is necessary for an obscure Andrdoid 4.0 bug where
+			// the browser hangs if the screen covers the entire document :/
+			documentHeight = this.document.height() - 1;
+
+		if ( screenHeight < documentHeight ) {
+			screen.height( documentHeight );
+		} else if ( popupHeight > screenHeight ) {
+			screen.height( popupHeight );
 		}
 	},
 
@@ -193,7 +200,7 @@ $.widget( "mobile.popup", {
 	},
 
 	_expectResizeEvent: function() {
-		var windowCoordinates = getWindowCoordinates();
+		var windowCoordinates = getWindowCoordinates( this.window );
 
 		if ( this._resizeData ) {
 			if ( windowCoordinates.x === this._resizeData.windowCoordinates.x &&
@@ -422,7 +429,7 @@ $.widget( "mobile.popup", {
 
 	_clampPopupWidth: function( infoOnly ) {
 		var menuSize,
-			windowCoordinates = getWindowCoordinates(),
+			windowCoordinates = getWindowCoordinates( this.window ),
 			// rectangle within which the popup must fit
 			rectangle = {
 				x: this._tolerance.l,
@@ -449,7 +456,6 @@ $.widget( "mobile.popup", {
 			rectangle = clampInfo.rc,
 			menuSize = clampInfo.menuSize;
 
-
 		// Center the menu over the desired coordinates, while not going outside
 		// the window tolerances. This will center wrt. the window if the popup is
 		// too large.
@@ -465,7 +471,7 @@ $.widget( "mobile.popup", {
 		// align the bottom with the bottom of the document
 
 		returnValue.top -= Math.min( returnValue.top,
-			Math.max( 0, returnValue.top + menuSize.cy - $.mobile.document.height() ) );
+			Math.max( 0, returnValue.top + menuSize.cy - this.document.height() ) );
 
 		return returnValue;
 	},
@@ -537,9 +543,9 @@ $.widget( "mobile.popup", {
 			}
 			if ( this._fallbackTransition ) {
 				this._ui.container
-					.animationComplete( $.proxy( args.prerequisites.container, "resolve" ) )
 					.addClass( args.containerClassToAdd )
-					.removeClass( args.classToRemove );
+					.removeClass( args.classToRemove )
+					.animationComplete( $.proxy( args.prerequisites.container, "resolve" ) );
 				return;
 			}
 		}
@@ -554,7 +560,7 @@ $.widget( "mobile.popup", {
 	_desiredCoords: function( openOptions ) {
 		var offset,
 			dst = null,
-			windowCoordinates = getWindowCoordinates(),
+			windowCoordinates = getWindowCoordinates( this.window ),
 			x = openOptions.x,
 			y = openOptions.y,
 			pTo = openOptions.positionTo;
@@ -615,11 +621,16 @@ $.widget( "mobile.popup", {
 	},
 
 	_openPrerequisitesComplete: function() {
+		var id = this.element.attr( "id" );
+
 		this._ui.container.addClass( "ui-popup-active" );
 		this._isOpen = true;
 		this._resizeScreen();
 		this._ui.container.attr( "tabindex", "0" ).focus();
 		this._ignoreResizeEvents();
+		if ( id ) {
+			this.document.find( "[aria-haspopup='true'][aria-owns='" +  id + "']" ).attr( "aria-expanded", true );
+		}
 		this._trigger( "afteropen" );
 	},
 
@@ -697,7 +708,8 @@ $.widget( "mobile.popup", {
 	},
 
 	_closePrerequisitesDone: function() {
-		var container = this._ui.container;
+		var container = this._ui.container,
+			id = this.element.attr( "id" );
 
 		container.removeAttr( "tabindex" );
 
@@ -706,6 +718,10 @@ $.widget( "mobile.popup", {
 
 		// Blur elements inside the container, including the container
 		$( ":focus", container[ 0 ] ).add( container[ 0 ] ).blur();
+
+		if ( id ) {
+			this.document.find( "[aria-haspopup='true'][aria-owns='" +  id + "']" ).attr( "aria-expanded", false );
+		}
 
 		// alert users that the popup is closed
 		this._trigger( "afterclose" );
@@ -801,7 +817,7 @@ $.widget( "mobile.popup", {
 		}
 
 		// remove nav bindings
-		$.mobile.window.off( currentOptions.closeEvents );
+		this.window.off( currentOptions.closeEvents );
 		// unbind click handlers added when history is disabled
 		this.element.undelegate( currentOptions.closeLinkSelector, currentOptions.closeLinkEvents );
 
@@ -812,7 +828,7 @@ $.widget( "mobile.popup", {
 	// NOTE the pagebeforechange is bound to catch navigation events that don't
 	//      alter the url (eg, dialogs from popups)
 	_bindContainerClose: function() {
-		$.mobile.window
+		this.window
 			.on( this.options.closeEvents, $.proxy( this, "_closePopup" ) );
 	},
 
@@ -834,7 +850,7 @@ $.widget( "mobile.popup", {
 
 		// set the global popup mutex
 		$.mobile.popup.active = this;
-		this._scrollTop = $.mobile.window.scrollTop();
+		this._scrollTop = this.window.scrollTop();
 
 		// if history alteration is disabled close on navigate events
 		// and leave the url as is
@@ -855,7 +871,7 @@ $.widget( "mobile.popup", {
 		}
 
 		// cache some values for min/readability
-		urlHistory = $.mobile.urlHistory;
+		urlHistory = $.mobile.navigate.history;
 		hashkey = $.mobile.dialogHashKey;
 		activePage = $.mobile.activePage;
 		currentIsDialog = ( activePage ? activePage.hasClass( "ui-dialog" ) : false );
@@ -870,7 +886,7 @@ $.widget( "mobile.popup", {
 
 		// if the current url has no dialog hash key proceed as normal
 		// otherwise, if the page is a dialog simply tack on the hash key
-		if ( url.indexOf( hashkey ) === -1 && !currentIsDialog ){
+		if ( url.indexOf( hashkey ) === -1 && !currentIsDialog ) {
 			url = url + (url.indexOf( "#" ) > -1 ? hashkey : "#" + hashkey);
 		} else {
 			url = $.mobile.path.parseLocation().hash + hashkey;
@@ -882,7 +898,7 @@ $.widget( "mobile.popup", {
 		}
 
 		// swallow the the initial navigation event, and bind for the next
-		$.mobile.window.one( "beforenavigate", function( theEvent ) {
+		this.window.one( "beforenavigate", function( theEvent ) {
 			theEvent.preventDefault();
 			self._open( options );
 			self._bindContainerClose();
@@ -900,7 +916,7 @@ $.widget( "mobile.popup", {
 			return this;
 		}
 
-		this._scrollTop = $.mobile.window.scrollTop();
+		this._scrollTop = this.window.scrollTop();
 
 		if ( this.options.history && this.urlAltered ) {
 			$.mobile.back();
@@ -914,18 +930,16 @@ $.widget( "mobile.popup", {
 	}
 });
 
-
 // TODO this can be moved inside the widget
 $.mobile.popup.handleLink = function( $link ) {
-	var closestPage = $link.closest( ":jqmData(role='page')" ),
+	var offset,
 		path = $.mobile.path,
-		scope = ( ( closestPage.length === 0 ) ? $( "body" ) : closestPage ),
-		// NOTE make sure to get only the hash, ie7 (wp7) returns the absolute href
-		//      in this case ruining the element selection
-		popup = $( path.hashToSelector( path.parseUrl( $link.attr( "href" ) ).hash ), scope[ 0 ] ),
-		offset;
 
-	if ( popup.data( "mobile-popup" ) ) {
+		// NOTE make sure to get only the hash from the href because ie7 (wp7)
+		//      returns the absolute href in this case ruining the element selection
+		popup = $( path.hashToSelector( path.parseUrl( $link.attr( "href" ) ).hash ) ).first();
+
+	if ( popup.length > 0 && popup.data( "mobile-popup" ) ) {
 		offset = $link.offset();
 		popup.popup( "open", {
 			x: offset.left + $link.outerWidth() / 2,

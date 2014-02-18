@@ -3,10 +3,9 @@
 //>>label: Link Classes
 //>>group: Utilities
 
-
 define( [ "jquery",
-	"jquery.mobile.core",
-	"navigation/path" ], function( jQuery ) {
+	"./jquery.mobile.core",
+	"./navigation/path" ], function( jQuery ) {
 //>>excludeEnd("jqmBuildExclude");
 (function( $, undefined ) {
 
@@ -19,21 +18,14 @@ $.mobile.links = function( target ) {
 		.filter( ":jqmData(rel='popup')[href][href!='']" )
 		.each( function() {
 			// Accessibility info for popups
-			var e = this,
-				href = $( this ).attr( "href" ),
-				sel = $.mobile.path.hashToSelector( href ),
-				idref = href.substring( 1 );
+			var element = this,
+				idref = element.getAttribute( "href" ).substring( 1 );
 
-			e.setAttribute( "aria-haspopup", true );
-			e.setAttribute( "aria-owns", idref );
-			e.setAttribute( "aria-expanded", false );
-			$( document )
-				.on( "popupafteropen", sel, function() {
-					e.setAttribute( "aria-expanded", true );
-				})
-				.on( "popupafterclose", sel, function() {
-					e.setAttribute( "aria-expanded", false );
-				});
+			if ( idref ) {
+				element.setAttribute( "aria-haspopup", true );
+				element.setAttribute( "aria-owns", idref );
+				element.setAttribute( "aria-expanded", false );
+			}
 		})
 		.end()
 		.not( ".ui-btn, :jqmData(role='none'), :jqmData(role='nojs')" )

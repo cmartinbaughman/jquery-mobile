@@ -14,7 +14,6 @@ $.widget( "mobile.selectmenu", $.extend( {
 
 	options: {
 		theme: null,
-		disabled: false,
 		icon: "carat-d",
 		iconpos: "right",
 		inline: false,
@@ -150,6 +149,10 @@ $.widget( "mobile.selectmenu", $.extend( {
 
 		this._handleFormReset();
 
+		this._on( this.button, {
+			keydown: "_handleKeydown"
+		});
+
 		this.build();
 	},
 
@@ -241,7 +244,9 @@ $.widget( "mobile.selectmenu", $.extend( {
 			if ( text ) {
 				span.text( text );
 			} else {
-				span.html( "&nbsp;" );
+
+				// Set the contents to &nbsp; which we write as &#160; to be XHTML compliant - see gh-6699
+				span.html( "&#160;" );
 			}
 
 			// TODO possibly aggregate multiple select option classes
@@ -261,13 +266,21 @@ $.widget( "mobile.selectmenu", $.extend( {
 		}
 	},
 
+	_handleKeydown: function( /* event */ ) {
+		this._delay( "_refreshButton" );
+	},
+
 	_reset: function() {
 		this.refresh();
 	},
 
-	refresh: function() {
+	_refreshButton: function() {
 		this.setButtonText();
 		this.setButtonCount();
+	},
+
+	refresh: function() {
+		this._refreshButton();
 	},
 
 	// open and close preserved in native selects

@@ -27,13 +27,13 @@ $.widget( "mobile.controlgroup", $.extend( {
 			opts = this.options;
 
 		// Run buttonmarkup
-		if( $.mobile.enhanceWithButtonMarkup ){
-			this.element.find( $.mobile.enhanceWithButtonMarkup.initSelector ).each( $.mobile.enhanceWithButtonMarkup );
+		if ( $.fn.buttonMarkup ) {
+			this.element.find( $.fn.buttonMarkup.initSelector ).buttonMarkup();
 		}
 		// Enhance child widgets
 		$.each( this._childWidgets, $.proxy( function( number, widgetName ) {
-			if( $.mobile[ widgetName ] ) {
-				this.element.find( $.mobile[ widgetName ].initSelector )[ widgetName ]();
+			if ( $.mobile[ widgetName ] ) {
+				this.element.find( $.mobile[ widgetName ].initSelector ).not( $.mobile.page.prototype.keepNativeSelector() )[ widgetName ]();
 			}
 		}, this ));
 
@@ -50,7 +50,7 @@ $.widget( "mobile.controlgroup", $.extend( {
 		} else {
 			this._ui = this._enhance();
 		}
-		
+
 	},
 
 	_childWidgets: [ "checkboxradio", "selectmenu", "button" ],
@@ -91,7 +91,7 @@ $.widget( "mobile.controlgroup", $.extend( {
 	},
 
 	_setOptions: function( options ) {
-		var callRefresh,
+		var callRefresh, returnValue,
 			elem = this.element;
 
 		// Must have one of horizontal or vertical
@@ -125,11 +125,13 @@ $.widget( "mobile.controlgroup", $.extend( {
 			callRefresh = true;
 		}
 
+		returnValue = this._super( options );
+
 		if ( callRefresh ) {
 			this.refresh();
 		}
 
-		return this._super( options );
+		return returnValue;
 	},
 
 	container: function() {

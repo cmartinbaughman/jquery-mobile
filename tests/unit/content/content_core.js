@@ -15,7 +15,7 @@
 		}
 	});
 
-	test( "rejects navigate events where the origina event's default is prevented", function(){
+	test( "rejects navigate events where the original event's default is prevented", function(){
 		expect( 1 );
 
 		mockEvent.originalEvent.isDefaultPrevented = function() {
@@ -91,11 +91,11 @@
 	test( "continues backward when the active content isn't a dialog", function() {
 		expect( 2 );
 
-		proto._getActiveContent = function() {
+		proto.getActivePage = function() {
 			return $( "<div>" );
 		};
 
-		proto._back = function(){
+		proto.back = function(){
 			ok( true, "back called" );
 		};
 
@@ -105,11 +105,11 @@
 	test( "continues forward when the active content isn't a dialog", function() {
 		expect( 2 );
 
-		proto._getActiveContent = function() {
+		proto.getActivePage = function() {
 			return $( "<div>" );
 		};
 
-		proto._forward = function(){
+		proto.forward = function(){
 			ok( true, "forward called" );
 		};
 
@@ -119,7 +119,7 @@
 	test( "extends changePageOptions when current content is a dialog", function() {
 		var result, opts = {};
 
-		proto._getActiveContent = function() {
+		proto.getActivePage = function() {
 			return $( "<div>", {"class": "ui-dialog"} );
 		};
 
@@ -351,7 +351,7 @@
 		}
 	});
 
-	test( "does nothing where the title is alread defined for the page", function() {
+	test( "does nothing where the title is already defined for the page", function() {
 		var html, page, pageHtml;
 
 		pageHtml = "<div data-foo-role='page' data-foo-title='bar'></div>";

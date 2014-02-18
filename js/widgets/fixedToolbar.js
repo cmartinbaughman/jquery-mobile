@@ -5,10 +5,9 @@
 //>>css.structure: ../css/structure/jquery.mobile.fixedToolbar.css
 //>>css.theme: ../css/themes/default/jquery.mobile.theme.css
 
-define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jquery.mobile.navigation", "./page","./toolbar","../jquery.mobile.zoom" ], function( jQuery ) {
+define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jquery.mobile.animationComplete", "../jquery.mobile.navigation", "./page","./toolbar","../jquery.mobile.zoom" ], function( jQuery ) {
 //>>excludeEnd("jqmBuildExclude");
 (function( $, undefined ) {
-
 
 	$.widget( "mobile.toolbar", $.mobile.toolbar, {
 		options: {
@@ -36,12 +35,12 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jque
 
 		_create: function() {
 			this._super();
-			if ( this.options.position === "fixed" && !this.options.supportBlacklist() ){
+			if ( this.options.position === "fixed" && !this.options.supportBlacklist() ) {
 				this._makeFixed();
 			}
 		},
 
-		_makeFixed: function(){
+		_makeFixed: function() {
 			this.element.addClass( "ui-"+ this.role +"-fixed" );
 			this.updatePagePadding();
 			this._addTransitionClass();
@@ -50,14 +49,14 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jque
 			this._setOptions( this.options );
 		},
 
-		_setOptions: function( o ){
-			if( o.position === "fixed" && this.options.position !== "fixed" ) {
+		_setOptions: function( o ) {
+			if ( o.position === "fixed" && this.options.position !== "fixed" ) {
 				this._makeFixed();
 			}
-			if ( this.options.position === "fixed" && !this.options.supportBlacklist() ){
+			if ( this.options.position === "fixed" && !this.options.supportBlacklist() ) {
 				var $page = ( !!this.page )? this.page: ( $(".ui-page-active").length > 0 )? $(".ui-page-active"): $(".ui-page").eq(0);
 
-				if ( o.fullscreen !== undefined){
+				if ( o.fullscreen !== undefined) {
 					if ( o.fullscreen ) {
 						this.element.addClass( "ui-"+ this.role +"-fullscreen" );
 						$page.addClass( "ui-page-" + this.role + "-fullscreen" );
@@ -86,7 +85,7 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jque
 		},
 
 		_bindPageEvents: function() {
-			var page = ( !!this.page )? this.element.closest( ".ui-page" ): $.mobile.document;
+			var page = ( !!this.page )? this.element.closest( ".ui-page" ): this.document;
 			//page event bindings
 			// Fixed toolbars require page zoom to be disabled, otherwise usability issues crop up
 			// This method is meant to disable zoom while a fixed-positioned toolbar page is visible
@@ -119,7 +118,7 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jque
 		_handlePageShow: function() {
 			this.updatePagePadding( ( !!this.page )? this.page: ".ui-page-active" );
 			if ( this.options.updatePagePadding ) {
-				this._on( $.mobile.window, { "throttledresize": "updatePagePadding" } );
+				this._on( this.window, { "throttledresize": "updatePagePadding" } );
 			}
 		},
 
@@ -127,12 +126,11 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jque
 			var o = this.options,
 				thisFooter, thisHeader, nextFooter, nextHeader;
 
-
 			if ( o.disablePageZoom ) {
 				$.mobile.zoom.enable( true );
 			}
 			if ( o.updatePagePadding ) {
-				this._off( $.mobile.window, "throttledresize" );
+				this._off( this.window, "throttledresize" );
 			}
 
 			if ( o.trackPersistentToolbars ) {
@@ -170,7 +168,7 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jque
 		},
 
 		_useTransition: function( notransition ) {
-			var $win = $.mobile.window,
+			var $win = this.window,
 				$el = this.element,
 				scroll = $win.scrollTop(),
 				elHeight = $el.height(),
@@ -271,6 +269,12 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core", "../jque
 						}
 					}
 				});
+		},
+
+		_setRelative: function() {
+			if( this.options.position !== "fixed" ){
+				$( "[data-"+ $.mobile.ns + "role='page']" ).css({ "position": "relative" });
+			}
 		},
 
 		_destroy: function() {

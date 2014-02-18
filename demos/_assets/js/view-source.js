@@ -3,7 +3,7 @@
 function attachPopupHandler( popup, sources ) {
 	popup.one( "popupbeforeposition", function() {
 		var
-			collapsibleSet = popup.find( "[data-role='collapsible-set']" ),
+			collapsibleSet = popup.find( "[data-role='collapsibleset']" ),
 			collapsible, pre;
 
 		$.each( sources, function( idx, options ) {
@@ -13,7 +13,24 @@ function attachPopupHandler( popup, sources ) {
 				"</div>" );
 			pre = collapsible.find( "pre" );
 			pre.append( options.data.replace( /</gmi, '&lt;' ) );
-			collapsible.appendTo( collapsibleSet );
+			collapsible
+				.appendTo( collapsibleSet )
+				.on( "collapsiblecollapse", function() {
+					popup.popup( "reposition", { positionTo: "window" } );
+				})
+				.on( "collapsibleexpand", function() {
+					var doReposition = true;
+
+					collapsibleSet.find( ":mobile-collapsible" ).not( this ).each( function() {
+						if ( $( this ).collapsible( "option", "expanded" ) ) {
+							doReposition = false;
+						}
+					});
+
+					if ( doReposition ) {
+						popup.popup( "reposition", { positionTo: "window" } );
+					}
+				});
 			SyntaxHighlighter.highlight( {}, pre[ 0 ] );
 		});
 
@@ -34,7 +51,7 @@ function getSnippet( type, selector, source ) {
 		el = source.find( type + selector );
 		// If this is not an embedded style, try a stylesheet reference
 		if ( el.length === 0 && type === "style" ) {
-			el = snippetSource.find( "link[rel='stylesheet']" + selector );
+			el = source.find( "link[rel='stylesheet']" + selector );
 		}
 		text = $( "<div></div>" ).append( el.contents().clone() ).html();
 		if ( !text ) {
@@ -69,7 +86,7 @@ $( document ).bind( "pagebeforechange", function( e, data ) {
 		sources = data.options.link.jqmData( "sources" );
 		if ( sources ) {
 			popup = $( "<div id='jqm-view-source' class='jqm-view-source' data-role='popup' data-theme='none' data-position-to='window'>" +
-								"<div data-role='collapsible-set' data-inset='true'></div>" +
+								"<div data-role='collapsibleset' data-inset='true'></div>" +
 							"</div>" );
 
 			attachPopupHandler( popup, sources );
@@ -91,15 +108,10 @@ function makeButton() {
 		a = document.createElement( "a" ),
 		txt = document.createTextNode( "View Source" );
 
-	d.className = "jqm-view-source-link";
+	a.className = "jqm-view-source-link ui-btn ui-corner-all ui-btn-inline ui-mini";
 
 	a.setAttribute( "href", "#popupDemo" );
 	a.setAttribute( "data-rel", "popup" );
-	a.setAttribute( "data-role", "button" );
-	a.setAttribute( "data-icon", "carat-u" );
-	a.setAttribute( "data-mini", "true" );
-	a.setAttribute( "data-inline", "true" );
-	a.setAttribute( "data-shadow", "false" );
 	a.appendChild( txt );
 
 	d.appendChild( a );
@@ -162,7 +174,7 @@ $( document ).on( "pagebeforecreate", "[data-role='page']", function() {
 	SyntaxHighlighter.defaults['auto-links'] = false;
 });
 
-$( document ).on( "pageinit", function( e ) {
+$( document ).on( "pagecreate", function( e ) {
 	// prevent page scroll while scrolling source code
 	$( document ).on( "mousewheel", ".jqm-view-source .ui-collapsible-content", function( event, delta ) {
 		if ( delta > 0 && $( this ).scrollTop() === 0 ) {
@@ -171,7 +183,7 @@ $( document ).on( "pageinit", function( e ) {
 			event.preventDefault();
 		}
 	});
-	
+
 	// reposition when switching between html / js / css
 	$( e.target ).delegate( ".jqm-view-source .ui-collapsible", "expand", function() {
 		$( this ).parents( ":mobile-popup" ).popup( "reposition", { positionTo: "window" } );
@@ -457,7 +469,6 @@ eval(function(p,a,c,k,e,d){e=function(c){return(c<a?'':e(parseInt(c/a)))+((c=c%a
 	// CommonJS
 	typeof(exports) != 'undefined' ? exports.Brush = Brush : null;
 })();
-
 
 /*! Copyright (c) 2011 Brandon Aaron (http://brandonaaron.net)
  * Licensed under the MIT License (LICENSE.txt).

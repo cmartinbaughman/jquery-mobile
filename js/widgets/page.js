@@ -8,7 +8,11 @@ define( [ "jquery", "../jquery.mobile.widget", "../jquery.mobile.core" ], functi
 (function( $, undefined ) {
 $.mobile.widgets = {};
 
-var originalWidget = $.widget;
+var originalWidget = $.widget,
+
+	// Record the original, non-mobileinit-modified version of $.mobile.keepNative
+	// so we can later determine whether someone has modified $.mobile.keepNative
+	keepNativeFactoryDefault = $.mobile.keepNative;
 
 $.widget = (function( orig ) {
 	return function() {
@@ -28,7 +32,7 @@ $.widget = (function( orig ) {
 $.extend( $.widget, originalWidget );
 
 // For backcompat remove in 1.5
-$.mobile.document.on( "create", function( event ){
+$.mobile.document.on( "create", function( event ) {
 	$( event.target ).enhanceWithin();
 });
 
@@ -39,6 +43,8 @@ $.widget( "mobile.page", {
 
 		// Deprecated in 1.4 remove in 1.5
 		keepNativeDefault: $.mobile.keepNative,
+
+		// Deprecated in 1.4 remove in 1.5
 		contentTheme: null,
 		enhanced: false
 	},
@@ -67,12 +73,12 @@ $.widget( "mobile.page", {
 
 		this.element.enhanceWithin();
 		// Dialog widget is deprecated in 1.4 remove this in 1.5
-		if( $.mobile.getAttribute( this.element[0], "role" ) === "dialog" && $.mobile.dialog ){
+		if ( $.mobile.getAttribute( this.element[0], "role" ) === "dialog" && $.mobile.dialog ) {
 			this.element.dialog();
 		}
 	},
 
-	_enhance: function (){
+	_enhance: function () {
 		var attrPrefix = "data-" + $.mobile.ns,
 			self = this;
 
@@ -106,14 +112,18 @@ $.widget( "mobile.page", {
 			page.is( ":jqmData(external-page='true')" ) ) {
 
 			// TODO use _on - that is, sort out why it doesn't work in this case
-			page.bind( "pagehide.remove", callback || function(/* e */) {
-				var $this = $( this ),
-					prEvent = new $.Event( "pageremove" );
+			page.bind( "pagehide.remove", callback || function( e, data ) {
 
-				$this.trigger( prEvent );
+				//check if this is a same page transition and if so don't remove the page
+				if( !data.samePage ){
+					var $this = $( this ),
+						prEvent = new $.Event( "pageremove" );
 
-				if ( !prEvent.isDefaultPrevented() ) {
-					$this.removeWithDependents();
+					$this.trigger( prEvent );
+
+					if ( !prEvent.isDefaultPrevented() ) {
+						$this.removeWithDependents();
+					}
 				}
 			});
 		}
@@ -121,7 +131,7 @@ $.widget( "mobile.page", {
 
 	_setOptions: function( o ) {
 		if ( o.theme !== undefined ) {
-			this.element.removeClass( "ui-body-" + this.options.theme ).addClass( "ui-body-" + o.theme );
+			this.element.removeClass( "ui-page-theme-" + this.options.theme ).addClass( "ui-page-theme-" + o.theme );
 		}
 
 		if ( o.contentTheme !== undefined ) {
@@ -145,13 +155,23 @@ $.widget( "mobile.page", {
 	// Deprecated in 1.4 remove in 1.5
 	keepNativeSelector: function() {
 		var options = this.options,
-			keepNativeDefined = options.keepNative && $.trim( options.keepNative );
+			keepNative = $.trim( options.keepNative || "" ),
+			globalValue = $.trim( $.mobile.keepNative ),
+			optionValue = $.trim( options.keepNativeDefault ),
 
-		if ( keepNativeDefined && options.keepNative !== options.keepNativeDefault ) {
-			return [options.keepNative, options.keepNativeDefault].join( ", " );
-		}
+			// Check if $.mobile.keepNative has changed from the factory default
+			newDefault = ( keepNativeFactoryDefault === globalValue ?
+				"" : globalValue ),
 
-		return options.keepNativeDefault;
+			// If $.mobile.keepNative has not changed, use options.keepNativeDefault
+			oldDefault = ( newDefault === "" ? optionValue : "" );
+
+		// Concatenate keepNative selectors from all sources where the value has
+		// changed or, if nothing has changed, return the default
+		return ( ( keepNative ? [ keepNative ] : [] )
+			.concat( newDefault ? [ newDefault ] : [] )
+			.concat( oldDefault ? [ oldDefault ] : [] )
+			.join( ", " ) );
 	}
 });
 })( jQuery );

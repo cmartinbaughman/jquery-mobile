@@ -2,7 +2,7 @@
 //>>description: Enhances and consistently styles text inputs.
 //>>label: Textarea Autosize
 //>>group: Forms
-//>>css.structure: ../css/structure/jquery.mobile.forms.textinput.css
+//>>css.structure: ../css/structure/jquery.mobile.forms.textinput.autogrow.css
 //>>css.theme: ../css/themes/default/jquery.mobile.theme.css
 
 define( [
@@ -26,6 +26,8 @@ define( [
 		},
 
 		_autogrow: function() {
+			this.element.addClass( "ui-textinput-autogrow" );
+
 			this._on({
 				"keyup": "_timeout",
 				"change": "_timeout",
@@ -57,11 +59,21 @@ define( [
 			if ( $.contains( event.target, this.element[ 0 ] ) &&
 				this.element.is( ":visible" ) ) {
 
-				this._prepareHeightUpdate();
+				if ( event.type !== "popupbeforeposition" ) {
+					this.element
+						.addClass( "ui-textinput-autogrow-resize" )
+						.animationComplete(
+							$.proxy( function() {
+								this.element.removeClass( "ui-textinput-autogrow-resize" );
+							}, this ),
+						"transition" );
+				}
+				this._timeout();
 			}
 		},
 
 		_unbindAutogrow: function() {
+			this.element.removeClass( "ui-textinput-autogrow" );
 			this._off( this.element, "keyup change input paste" );
 			this._off( this.document,
 				"pageshow popupbeforeposition updatelayout panelopen" );
@@ -85,18 +97,26 @@ define( [
 		},
 
 		_updateHeight: function() {
-
+			var paddingTop, paddingBottom, paddingHeight, scrollHeight, clientHeight,
+				borderTop, borderBottom, borderHeight, height,
+				scrollTop = this.window.scrollTop();
 			this.keyupTimeout = 0;
 
-			this.element.css( "height", "0px" );
+			// IE8 textareas have the onpage property - others do not
+			if ( !( "onpage" in this.element[ 0 ] ) ) {
+				this.element.css({
+					"height": 0,
+					"min-height": 0,
+					"max-height": 0
+				});
+			}
 
-			var paddingTop, paddingBottom, paddingHeight,
-				scrollHeight = this.element[ 0 ].scrollHeight,
-				clientHeight = this.element[ 0 ].clientHeight,
-				borderTop = parseFloat( this.element.css( "border-top-width" ) ),
-				borderBottom = parseFloat( this.element.css( "border-bottom-width" ) ),
-				borderHeight = borderTop + borderBottom,
-				height = scrollHeight + borderHeight + 15;
+			scrollHeight = this.element[ 0 ].scrollHeight;
+			clientHeight = this.element[ 0 ].clientHeight;
+			borderTop = parseFloat( this.element.css( "border-top-width" ) );
+			borderBottom = parseFloat( this.element.css( "border-bottom-width" ) );
+			borderHeight = borderTop + borderBottom;
+			height = scrollHeight + borderHeight + 15;
 
 			// Issue 6179: Padding is not included in scrollHeight and
 			// clientHeight by Firefox if no scrollbar is visible. Because
@@ -112,7 +132,13 @@ define( [
 				height += paddingHeight;
 			}
 
-			this.element.css( "height", height + "px" );
+			this.element.css({
+				"height": height,
+				"min-height": "",
+				"max-height": ""
+			});
+
+			this.window.scrollTop( scrollTop );
 		},
 
 		refresh: function() {

@@ -53,6 +53,11 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 		this.button.focus();
 	},
 
+	_handleKeydown: function( event ) {
+		this._super( event );
+		this._handleButtonVclickKeydown( event );
+	},
+
 	_handleButtonVclickKeydown: function( event ) {
 		if ( this.options.disabled || this.isOpen ) {
 			return;
@@ -128,8 +133,10 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 	},
 
 	build: function() {
-		var selectId, popupId, dialogId, label, thisPage, isMultiple, menuId, themeAttr, overlayThemeAttr,
-			dividerThemeAttr, menuPage, listbox, list, header, headerTitle, menuPageContent, menuPageClose, headerClose, self,
+		var selectId, popupId, dialogId, label, thisPage, isMultiple, menuId,
+			themeAttr, overlayTheme, overlayThemeAttr, dividerThemeAttr,
+			menuPage, listbox, list, header, headerTitle, menuPageContent,
+			menuPageClose, headerClose, self,
 			o = this.options;
 
 		if ( o.nativeMenu ) {
@@ -145,7 +152,9 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 		isMultiple = this.element[ 0 ].multiple;
 		menuId = selectId + "-menu";
 		themeAttr = o.theme ? ( " data-" + $.mobile.ns + "theme='" + o.theme + "'" ) : "";
-		overlayThemeAttr = o.overlayTheme ? ( " data-" + $.mobile.ns + "theme='" + o.overlayTheme + "'" ) : "";
+		overlayTheme = o.overlayTheme || o.theme || null;
+		overlayThemeAttr = overlayTheme ? ( " data-" + $.mobile.ns +
+			"overlay-theme='" + overlayTheme + "'" ) : "";
 		dividerThemeAttr = ( o.dividerTheme && isMultiple ) ? ( " data-" + $.mobile.ns + "divider-theme='" + o.dividerTheme + "'" ) : "";
 		menuPage = $( "<div data-" + $.mobile.ns + "role='dialog' class='ui-selectmenu' id='" + dialogId + "'" + themeAttr + overlayThemeAttr + ">" +
 			"<div data-" + $.mobile.ns + "role='header'>" +
@@ -153,10 +162,10 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 			"</div>"+
 			"<div data-" + $.mobile.ns + "role='content'></div>"+
 			"</div>" );
-		listbox = $( "<div id='" + popupId + "' class='ui-selectmenu'>" ).insertAfter( this.select ).popup({ theme: o.overlayTheme });
-		list = $( "<ul class='ui-selectmenu-list' id='" + menuId + "' role='listbox' aria-labelledby='" + this.buttonId + "'" + themeAttr + dividerThemeAttr + ">" ).appendTo( listbox );
-		header = $( "<div class='ui-header ui-bar-" + ( o.theme ? o.theme : "inherit" ) + "'>" ).prependTo( listbox );
-		headerTitle = $( "<h1 class='ui-title'>" ).appendTo( header );
+		listbox = $( "<div id='" + popupId + "' class='ui-selectmenu'></div>" ).insertAfter( this.select ).popup({ theme: o.overlayTheme });
+		list = $( "<ul class='ui-selectmenu-list' id='" + menuId + "' role='listbox' aria-labelledby='" + this.buttonId + "'" + themeAttr + dividerThemeAttr + "></ul>" ).appendTo( listbox );
+		header = $( "<div class='ui-header ui-bar-" + ( o.theme ? o.theme : "inherit" ) + "'></div>" ).prependTo( listbox );
+		headerTitle = $( "<h1 class='ui-title'></h1>" ).appendTo( header );
 
 		if ( this.isMultiple ) {
 			headerClose = $( "<a>", {
@@ -203,8 +212,7 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 
 		// Button events
 		this._on( this.button, {
-			vclick : "_handleButtonVclickKeydown",
-			keydown : "_handleButtonVclickKeydown"
+			vclick: "_handleButtonVclickKeydown"
 		});
 
 		// Events for list items
@@ -228,8 +236,8 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 				// toggle checkbox class for multiple selects
 				if ( self.isMultiple ) {
 					$( this ).find( "a" )
-						.toggleClass( "ui-icon-checkbox-on", option.selected )
-						.toggleClass( "ui-icon-checkbox-off", !option.selected );
+						.toggleClass( "ui-checkbox-on", option.selected )
+						.toggleClass( "ui-checkbox-off", !option.selected );
 				}
 
 				// trigger change if value changed
@@ -309,7 +317,7 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 
 					// Multiple selects: add the "on" checkbox state to the icon
 					if ( self.isMultiple ) {
-						item.find( "a" ).removeClass( "ui-icon-checkbox-off" ).addClass( "ui-icon-checkbox-on" );
+						item.find( "a" ).removeClass( "ui-checkbox-off" ).addClass( "ui-checkbox-on" );
 					} else {
 						if ( item.hasClass( "ui-screen-hidden" ) ) {
 							item.next().find( "a" ).addClass( $.mobile.activeBtnClass );
@@ -354,7 +362,7 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 
 	_decideFormat: function() {
 		var self = this,
-			$window = $.mobile.window,
+			$window = this.window,
 			selfListParent = self.list.parent(),
 			menuHeight = selfListParent.outerHeight(),
 			scrollTop = $window.scrollTop(),
@@ -399,7 +407,7 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 			o = this.options,
 			placeholder = this.placeholder,
 			needPlaceholder = true,
-			dataIcon = this.isMultiple ? "checkbox-off" : "false",
+			dataIcon = "false",
 			$options, numOptions, select,
 			dataPrefix = "data-" + $.mobile.ns,
 			dataIndexAttr = dataPrefix + "option-index",
@@ -470,7 +478,7 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 
 			item = document.createElement( "li" );
 			if ( option.disabled ) {
-				classes.push( "ui-disabled" );
+				classes.push( "ui-state-disabled" );
 				item.setAttribute( "aria-disabled", true );
 			}
 			item.setAttribute( dataIndexAttr, i );
@@ -481,6 +489,10 @@ $.widget( "mobile.selectmenu", $.mobile.selectmenu, {
 			item.className = classes.join( " " );
 			item.setAttribute( "role", "option" );
 			anchor.setAttribute( "tabindex", "-1" );
+			if ( this.isMultiple ) {
+				$( anchor ).addClass( "ui-btn ui-checkbox-off ui-btn-icon-right" );
+			}
+
 			item.appendChild( anchor );
 			fragment.appendChild( item );
 		}

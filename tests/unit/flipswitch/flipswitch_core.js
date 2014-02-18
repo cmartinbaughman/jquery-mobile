@@ -34,7 +34,8 @@
 		ok( $("#flip-select-second-option").parent().hasClass("ui-bar-inherit"), "should be inherit theme" );
 	});
 	test( "checkbox based flipswitch is toggled on click", function() {
-		$("#flip-checkbox").click()
+		ok( !$("#flip-checkbox").parent().hasClass("ui-flipswitch-active"), "should not be active" );
+		$("#flip-checkbox").parent().click()
 		ok( $("#flip-checkbox").parent().hasClass("ui-flipswitch-active"), "should be active" );
 	});
 	test( "select based flipswitch is toggled on click", function() {
@@ -56,6 +57,14 @@
 	test( "select based flipswitch is active after right swipe", function() {
 		$("#flip-select").trigger("swiperight");
 		ok( $("#flip-select").parent().hasClass("ui-flipswitch-active"), "should not be active" );
+	});
+	test( "checkbox based flipswitch is untabbable", function() {
+		deepEqual( parseInt( $( "#flip-checkbox" ).attr( "tabindex" ) ), -1,
+			"tabindex is set to -1" );
+	});
+	test( "select based flipswitch is untabbable", function() {
+		deepEqual( parseInt( $( "#flip-select" ).attr( "tabindex" ) ), -1,
+			"tabindex is set to -1" );
 	});
 
 })( jQuery );

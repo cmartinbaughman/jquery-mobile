@@ -5,7 +5,7 @@
 //>>css.structure: ../css/structure/jquery.mobile.core.css
 //>>css.theme: ../css/themes/default/jquery.mobile.theme.css
 
-define( [ "jquery", "./jquery.mobile.ns", "./jquery.ui.core" ], function( jQuery ) {
+define( [ "jquery", "./jquery.mobile.ns", "jquery-ui/jquery.ui.core" ], function( jQuery ) {
 //>>excludeEnd("jqmBuildExclude");
 (function( $, window, undefined ) {
 
@@ -37,6 +37,27 @@ define( [ "jquery", "./jquery.mobile.ns", "./jquery.ui.core" ], function( jQuery
 			setTimeout(function() {
 				$.event.special.scrollstart.enabled = true;
 			}, 150 );
+		},
+
+		getClosestBaseUrl: function( ele )	{
+			// Find the closest page and extract out its url.
+			var url = $( ele ).closest( ".ui-page" ).jqmData( "url" ),
+				base = $.mobile.path.documentBase.hrefNoHash;
+
+			if ( !$.mobile.dynamicBaseEnabled || !url || !$.mobile.path.isPath( url ) ) {
+				url = base;
+			}
+
+			return $.mobile.path.makeUrlAbsolute( url, base );
+		},
+		removeActiveLinkClass: function( forceRemoval ) {
+			if ( !!$.mobile.activeClickedLink &&
+				( !$.mobile.activeClickedLink.closest( "." + $.mobile.activePageClass ).length ||
+					forceRemoval ) ) {
+
+				$.mobile.activeClickedLink.removeClass( $.mobile.activeBtnClass );
+			}
+			$.mobile.activeClickedLink = null;
 		},
 
 		// DEPRECATED in 1.4
@@ -121,6 +142,19 @@ define( [ "jquery", "./jquery.mobile.ns", "./jquery.ui.core" ], function( jQuery
 			height = ( typeof height === "number" ) ? height : $.mobile.getScreenHeight();
 
 			page.css( "min-height", height - ( pageOuterHeight - pageHeight ) );
+		},
+
+		loading: function() {
+			// If this is the first call to this function, instantiate a loader widget
+			var loader = this.loading._widget || $( $.mobile.loader.prototype.defaultHtml ).loader(),
+
+				// Call the appropriate method on the loader
+				returnValue = loader.loader.apply( loader, arguments );
+
+			// Make sure the loader is retained for future calls to this function.
+			this.loading._widget = loader;
+
+			return returnValue;
 		}
 	});
 
@@ -139,7 +173,9 @@ define( [ "jquery", "./jquery.mobile.ns", "./jquery.ui.core" ], function( jQuery
 
 		// Enhance child elements
 		enhanceWithin: function() {
-			var widgetElements,
+			var index,
+				widgetElements = {},
+				keepNative = $.mobile.page.prototype.keepNativeSelector(),
 				that = this;
 
 			// Add no js class to elements
@@ -159,12 +195,14 @@ define( [ "jquery", "./jquery.mobile.ns", "./jquery.ui.core" ], function( jQuery
 
 			// Run buttonmarkup
 			if ( $.fn.buttonMarkup ) {
-				$( $.fn.buttonMarkup.initSelector ).buttonMarkup();
+				this.find( $.fn.buttonMarkup.initSelector ).not( keepNative )
+				.jqmEnhanceable().buttonMarkup();
 			}
 
 			// Add classes for fieldContain
 			if ( $.fn.fieldcontain ) {
-				this.find( ":jqmData(role='fieldcontain')" ).jqmEnhanceable().fieldcontain();
+				this.find( ":jqmData(role='fieldcontain')" ).not( keepNative )
+				.jqmEnhanceable().fieldcontain();
 			}
 
 			// Enhance widgets
@@ -174,20 +212,26 @@ define( [ "jquery", "./jquery.mobile.ns", "./jquery.ui.core" ], function( jQuery
 				if ( constructor.initSelector ) {
 
 					// Filter elements that should not be enhanced based on parents
-					widgetElements = $.mobile.enhanceable( that.find( constructor.initSelector ) );
+					var elements = $.mobile.enhanceable( that.find( constructor.initSelector ) );
 
 					// If any matching elements remain filter ones with keepNativeSelector
-					if ( widgetElements.length ) {
+					if ( elements.length > 0 ) {
 
-						// $.mobile.page.prototype.keepNativeSelector is deprecated this is just for backcompt
-						// Switch to $.mobile.keepNativeSelector in 1.5 which is just a value not a function
-						widgetElements = widgetElements.not( $.mobile.page.prototype.keepNativeSelector() );
+						// $.mobile.page.prototype.keepNativeSelector is deprecated this is just for backcompat
+						// Switch to $.mobile.keepNative in 1.5 which is just a value not a function
+						elements = elements.not( keepNative );
 					}
 
 					// Enhance whatever is left
-					widgetElements[ constructor.prototype.widgetName ]();
+					if ( elements.length > 0 ) {
+						widgetElements[ constructor.prototype.widgetName ] = elements;
+					}
 				}
 			});
+
+			for ( index in widgetElements ) {
+				widgetElements[ index ][ index ]();
+			}
 
 			return this;
 		},

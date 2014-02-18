@@ -372,7 +372,6 @@ $.widget( "mobile.slider", $.extend( {
 		return  this.isToggleSwitch ? this.element[0].selectedIndex : parseFloat( this.element.val() ) ;
 	},
 
-
 	_reset: function() {
 		this.refresh( undefined, false, true );
 	},
@@ -582,7 +581,9 @@ $.widget( "mobile.slider", $.extend( {
 	_setDisabled: function( value ) {
 		value = !!value;
 		this.element.prop( "disabled", value );
-		this.slider.toggleClass( "ui-state-disabled" ).attr( "aria-disabled", value );
+		this.slider
+			.toggleClass( "ui-state-disabled", value )
+			.attr( "aria-disabled", value );
 	}
 
 }, $.mobile.behaviors.formReset ) );

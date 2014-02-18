@@ -145,7 +145,6 @@ define(["jquery",
 			this.history.add( state.url, state );
 		},
 
-
 		// This binding is intended to catch the popstate events that are fired
 		// when execution of the `$.navigate` method stops at window.location.hash = url;
 		// and completely prevent them from propagating. The popstate event will then be
@@ -158,7 +157,7 @@ define(["jquery",
 
 			// Partly to support our test suite which manually alters the support
 			// value to test hashchange. Partly to prevent all around weirdness
-			if ( !$.event.special.navigate.isPushStateEnabled() ){
+			if ( !$.event.special.navigate.isPushStateEnabled() ) {
 				return;
 			}
 
@@ -250,7 +249,7 @@ define(["jquery",
 
 			// On occasion explicitly want to prevent the next hash from propogating because we only
 			// with to alter the url to represent the new state do so here
-			if ( this.preventNextHashChange ){
+			if ( this.preventNextHashChange ) {
 				this.preventNextHashChange = false;
 				event.stopImmediatePropagation();
 				return;

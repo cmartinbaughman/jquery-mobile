@@ -33,7 +33,6 @@ $.widget( "mobile.filterable", $.mobile.filterable, {
 		filterTheme: null
 	},
 
-
 	_create: function() {
 		var idx, widgetName,
 			elem = this.element,
@@ -66,6 +65,16 @@ $.widget( "mobile.filterable", $.mobile.filterable, {
 		this._setWidget( this.element.data( "mobile-" + evt.type.substring( 0, evt.type.length - 6 ) ) );
 	},
 
+	_trigger: function( type, event, data ) {
+		if ( this._widget && this._widget.widgetFullName === "mobile-listview" &&
+			type === "beforefilter" ) {
+
+			// Also trigger listviewbeforefilter if this widget is also a listview
+			this._widget._trigger( "beforefilter", event, data );
+		}
+		this._super( type, event, data );
+	},
+
 	_setWidget: function( widget ) {
 		if ( !this._widget && widget ) {
 			this._widget = widget;
@@ -75,7 +84,7 @@ $.widget( "mobile.filterable", $.mobile.filterable, {
 		if ( !!this._widget ) {
 			this._syncTextInputOptions( this._widget.options );
 			if ( this._widget.widgetName === "listview" ) {
-				this._widget.options.hidedividers = true;
+				this._widget.options.hideDividers = true;
 				this._widget.element.listview( "refresh" );
 			}
 		}

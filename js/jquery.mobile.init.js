@@ -3,10 +3,9 @@
 //>>label: Init
 //>>group: Core
 
-
 define([
 	"jquery",
-	"./jquery.ui.core",
+	"jquery-ui/jquery.ui.core",
 	"./jquery.mobile.defaults",
 	"./jquery.mobile.helpers",
 	"./jquery.mobile.data",
@@ -17,7 +16,7 @@ define([
 	"./jquery.mobile.navigation",
 	"./widgets/loader",
 	"./jquery.mobile.vmouse",
-	"jquery.hashchange" ], function( jQuery ) {
+	"jquery-plugins/jquery.hashchange" ], function( jQuery ) {
 //>>excludeEnd("jqmBuildExclude");
 (function( $, window, undefined ) {
 	var	$html = $( "html" ),
@@ -93,7 +92,7 @@ define([
 			$window.trigger( "pagecontainercreate" );
 
 			// cue page loading message
-			$.mobile.showPageLoadingMsg();
+			$.mobile.loading( "show" );
 
 			//remove initial build class (only present on first pageshow)
 			hideRenderingClass();
@@ -110,7 +109,7 @@ define([
 
 				// Store the initial destination
 				if ( $.mobile.path.isHashValid( location.hash ) ) {
-					$.mobile.urlHistory.initialDst = hash.replace( "#", "" );
+					$.mobile.navigate.history.initialDst = hash.replace( "#", "" );
 				}
 
 				// make sure to set initial popstate state if it exists
@@ -143,11 +142,11 @@ define([
 	$(function() {
 		//Run inlineSVG support test
 		$.support.inlineSVG();
-		
+
 		// check which scrollTop value should be used by scrolling to 1 immediately at domready
 		// then check what the scroll top is. Android will report 0... others 1
 		// note that this initial scroll won't hide the address bar. It's just for the check.
-		
+
 		// hide iOS browser chrome on load if hideUrlBar is true this is to try and do it as soon as possible
 		if ( $.mobile.hideUrlBar ) {
 			window.scrollTo( 0, 1 );

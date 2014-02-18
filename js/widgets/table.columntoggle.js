@@ -4,12 +4,10 @@
 //>>group: Widgets
 //>>css.structure: ../css/structure/jquery.mobile.table.columntoggle.css
 
-
 define( [
 	"jquery",
 	"./table",
 	"./popup",
-	"../jquery.mobile.fieldContain",
 	"./controlgroup",
 	"./forms/checkboxradio" ], function( jQuery ) {
 //>>excludeEnd("jqmBuildExclude");
@@ -32,7 +30,7 @@ $.widget( "mobile.table", $.mobile.table, {
 	_create: function() {
 		this._super();
 
-		if( this.options.mode !== "columntoggle" ) {
+		if ( this.options.mode !== "columntoggle" ) {
 			return;
 		}
 
@@ -40,8 +38,9 @@ $.widget( "mobile.table", $.mobile.table, {
 			_menu: null
 		});
 
-		if( this.options.enhanced ) {
-			this._menu = this.document.find( this._id() + "-popup" ).children().first();
+		if ( this.options.enhanced ) {
+			this._menu = $( this.document[ 0 ].getElementById( this._id() + "-popup" ) ).children().first();
+			this._addToggles( this._menu, true );
 		} else {
 			this._menu = this._enhanceColToggle();
 			this.element.addClass( this.options.classes.columnToggleTable );
@@ -61,25 +60,25 @@ $.widget( "mobile.table", $.mobile.table, {
 		// so it can be called on refresh, too
 
 		// update column toggles on resize
-		this._on( $.mobile.window, {
+		this._on( this.window, {
 			throttledresize: "_setToggleState"
 		});
-	},
-
-	_bindToggles: function( menu ) {
-		var inputs = menu.find( "input" );
-
-		this._on( inputs, {
-			change: "_menuInputChange"
+		this._on( this._menu, {
+			"change input": "_menuInputChange"
 		});
 	},
 
 	_addToggles: function( menu, keep ) {
-		var opts = this.options;
+		var inputs,
+			checkboxIndex = 0,
+			opts = this.options,
+			container = menu.controlgroup( "container" );
 
 		// allow update of menu on refresh (fixes #5880)
-		if ( !keep ) {
-			menu.empty();
+		if ( keep ) {
+			inputs = menu.find( "input" );
+		} else {
+			container.empty();
 		}
 
 		// create the hide/show toggles
@@ -88,27 +87,26 @@ $.widget( "mobile.table", $.mobile.table, {
 				priority = $.mobile.getAttribute( this, "priority" ),
 				cells = header.add( header.jqmData( "cells" ) );
 
-			if( priority ) {
+			if ( priority ) {
 				cells.addClass( opts.classes.priorityPrefix + priority );
 
-				if ( !keep ) {
+				( keep ? inputs.eq( checkboxIndex++ ) :
 					$("<label><input type='checkbox' checked />" +
 						( header.children( "abbr" ).first().attr( "title" ) ||
 							header.text() ) +
 						"</label>" )
-						.appendTo( menu )
+						.appendTo( container )
 						.children( 0 )
-						.jqmData( "cells", cells )
 						.checkboxradio( {
 							theme: opts.columnPopupTheme
-						});
-				}
+						}) )
+					.jqmData( "cells", cells );
 			}
 		});
 
 		// set bindings here
 		if ( !keep ) {
-			this._bindToggles( menu );
+			menu.controlgroup( "refresh" );
 		}
 	},
 
@@ -139,15 +137,16 @@ $.widget( "mobile.table", $.mobile.table, {
 			table = this.element,
 			opts = this.options,
 			ns = $.mobile.ns,
-			fragment = $.mobile.document[ 0 ].createDocumentFragment();
+			fragment = this.document[ 0 ].createDocumentFragment();
 
 		id = this._id() + "-popup";
-		menuButton = $( "<a role='button' href='#" + id + "' " +
-			"class='" + opts.classes.columnBtn + " ui-btn ui-btn-" + ( opts.columnBtnTheme || "a" ) + " ui-corner-all ui-shadow ui-mini' " +
-			"data-" + ns + "rel='popup' " +
-			"data-" + ns + "mini='true'>" + opts.columnBtnText + "</a>" );
-		popup = $( "<div data-" + ns + "role='popup' data-" + ns + "role='fieldcontain' class='" + opts.classes.popup + "' id='" + id + "'></div>" );
-		menu = $( "<fieldset data-" + ns + "role='controlgroup'></fieldset>" );
+		menuButton = $( "<a href='#" + id + "' " +
+			"class='" + opts.classes.columnBtn + " ui-btn " +
+			"ui-btn-" + ( opts.columnBtnTheme || "a" ) +
+			" ui-corner-all ui-shadow ui-mini' " +
+			"data-" + ns + "rel='popup'>" + opts.columnBtnText + "</a>" );
+		popup = $( "<div class='" + opts.classes.popup + "' id='" + id + "'></div>" );
+		menu = $( "<fieldset></fieldset>" ).controlgroup();
 
 		// set extension here, send "false" to trigger build/rebuild
 		this._addToggles( menu, false );
@@ -158,7 +157,7 @@ $.widget( "mobile.table", $.mobile.table, {
 		fragment.appendChild( menuButton[ 0 ] );
 		table.before( fragment );
 
-		popup.popup().enhanceWithin();
+		popup.popup();
 
 		return menu;
 	},

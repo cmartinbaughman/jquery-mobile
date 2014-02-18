@@ -10,6 +10,7 @@ define( [ "jquery",
 
 		  // TODO event.special.scrollstart
 		  "../events/touch",
+		  "../jquery.mobile.animationComplete",
 
 		  // TODO $.mobile.focusPage reference
 		  "../jquery.mobile.navigation" ], function( jQuery ) {
@@ -59,7 +60,9 @@ define( [ "jquery",
 			if ( $.mobile.window.scrollTop() !== this.toScroll ) {
 				this.scrollPage();
 			}
-
+			if ( !this.sequential ) {
+				this.$to.addClass( $.mobile.activePageClass );
+			}
 			this.deferred.resolve( this.name, this.reverse, this.$to, this.$from, true );
 		},
 
@@ -95,7 +98,7 @@ define( [ "jquery",
 				this.$to.addClass( $.mobile.activePageClass + this.toPreClass );
 
 				// Send focus to page as it is now display: block
-				if( !preventFocus ){
+				if ( !preventFocus ) {
 					$.mobile.focusPage( this.$to );
 				}
 
@@ -107,17 +110,15 @@ define( [ "jquery",
                 }
 			});
 
-			if ( !none ) {
-				this.$to.animationComplete( $.proxy(function() {
-					this.doneIn();
-				}, this ));
-			}
-
 			this.$to
 				.removeClass( this.toPreClass )
 				.addClass( this.name + " in " + reverseClass );
 
-			if ( none ) {
+			if ( !none ) {
+				this.$to.animationComplete( $.proxy(function() {
+					this.doneIn();
+				}, this ));
+			} else {
 				this.doneIn();
 			}
 
@@ -132,7 +133,6 @@ define( [ "jquery",
 				.height( screenHeight + $.mobile.window.scrollTop() )
 				.addClass( this.name + " out" + reverseClass );
 		},
-
 
 		toggleViewportClass: function() {
 			$.mobile.pageContainer.toggleClass( "ui-mobile-viewport-transitioning viewport-" + this.name );
@@ -149,7 +149,7 @@ define( [ "jquery",
 				maxTransitionOverride = $.mobile.maxTransitionWidth !== false && $.mobile.window.width() > $.mobile.maxTransitionWidth,
 				none = !$.support.cssTransitions || !$.support.cssAnimations || maxTransitionOverride || !this.name || this.name === "none" || Math.max( $.mobile.window.scrollTop(), this.toScroll ) > $.mobile.getMaxScrollForTransition();
 
-			this.toScroll = $.mobile.urlHistory.getActive().lastScroll || $.mobile.defaultHomeScroll;
+			this.toScroll = $.mobile.navigate.history.getActive().lastScroll || $.mobile.defaultHomeScroll;
 			this.toggleViewportClass();
 
 			if ( this.$from && !none ) {

@@ -48,7 +48,7 @@ $.widget( "mobile.dialog", {
 		if ( $target.length && !$target.jqmData( "transition" ) ) {
 			attrs = {};
 			attrs[ "data-" + $.mobile.ns + "transition" ] =
-				( $.mobile.urlHistory.getActive() || {} )[ "transition" ] ||
+				( $.mobile.navigate.history.getActive() || {} )[ "transition" ] ||
 				$.mobile.defaultDialogTransition;
 			attrs[ "data-" + $.mobile.ns + "direction" ] = "reverse";
 			$target.attr( attrs );
@@ -150,7 +150,7 @@ $.widget( "mobile.dialog", {
 
 	// Close method goes back in history
 	close: function() {
-		var idx, dst, hist = $.mobile.navigate.history;
+		var hist = $.mobile.navigate.history;
 
 		if ( this._isCloseable ) {
 			this._isCloseable = false;
@@ -160,15 +160,7 @@ $.widget( "mobile.dialog", {
 			if ( $.mobile.hashListeningEnabled && hist.activeIndex > 0 ) {
 				$.mobile.back();
 			} else {
-				idx = Math.max( 0, hist.activeIndex - 1 );
-				dst = hist.stack[ idx ].pageUrl || hist.stack[ idx ].url;
-				hist.previousIndex = hist.activeIndex;
-				hist.activeIndex = idx;
-				if ( !$.mobile.path.isPath( dst ) ) {
-					dst = $.mobile.path.makeUrlAbsolute( "#" + dst );
-				}
-
-				$.mobile.changePage( dst, { direction: "back", changeHash: false, fromHashChange: true } );
+				$.mobile.pageContainer.pagecontainer( "back" );
 			}
 		}
 	}
